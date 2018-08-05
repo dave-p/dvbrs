@@ -48,6 +48,8 @@ int main(int argc, char **argv)
 	int fd;
 
 	void finish();
+	
+	setbuf(stdout, NULL);
 	ProgName = argv[0];
 	
 	if ((fd = open("/dev/dvb/adapter0/demux0", O_RDWR | O_NONBLOCK)) < 0) {
