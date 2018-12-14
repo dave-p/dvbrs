@@ -45,14 +45,21 @@ int main(int argc, char **argv)
 	int res;
 	unsigned int now[65536], next[65536];
 	int count = 0;
-	int fd;
+	int fd, dev;
 
 	void finish();
 	
 	setbuf(stdout, NULL);
 	ProgName = argv[0];
-	
-	if ((fd = open("/dev/dvb/adapter0/demux0", O_RDWR | O_NONBLOCK)) < 0) {
+
+	if (argc != 2) {
+		errmsg("Usage: dvbrs adaptor_number\n");
+		return -1;
+	}
+
+	dev = atoi(argv[1]);
+	sprintf(buf, "/dev/dvb/adapter%d/demux0", dev);
+	if ((fd = open(buf, O_RDWR | O_NONBLOCK)) < 0) {
 		perror("dvbrs DEVICE: ");
 		return -1;
 	}
