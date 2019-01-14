@@ -44,22 +44,30 @@ int main(int argc, char **argv)
 	struct pollfd ufd;
 	int res;
 	unsigned int now[65536], next[65536];
-	int count = 0;
-	int fd, dev;
+	int count = 0, sid_req = 0;
+	int fd, dev = 0, opt;
 
 	void finish();
 	
 	setbuf(stdout, NULL);
 	ProgName = argv[0];
 
-	if (argc != 2) {
-		errmsg("Usage: dvbrs adaptor_number\n");
-		return -1;
+	while ((opt = getopt(argc, argv, "a:s:")) != -1) {
+	    switch (opt) {
+		case 'a':
+		    dev = atoi(optarg);
+		    break;
+		case 's':
+		    sid_req = atoi(optarg);
+		    break;
+		default: /* '?' */
+		    fprintf(stderr, "Usage: %s [-a adapter-no] [-s SID]\n", argv[0]);
+		    exit(EXIT_FAILURE);
+	    }
 	}
 
-	dev = atoi(argv[1]);
 	sprintf(buf, "/dev/dvb/adapter%d/demux0", dev);
-	if ((fd = open(buf, O_RDWR | O_NONBLOCK)) < 0) {
+	if ((fd = open(buf, O_RDONLY | O_NONBLOCK)) < 0) {
 		perror("dvbrs DEVICE: ");
 		return -1;
 	}
@@ -98,13 +106,13 @@ int main(int argc, char **argv)
 				int rs = (buf[24] & 0xe0) >> 5;
 				int sid = (buf[3] << 8) + buf[4];
 				if (rs == 1) {
-				    if (next[sid] != eid) {
+				    if ((!sid_req && (next[sid] != eid)) || (sid_req == sid)) {
 					next[sid] = eid;
 					report(buf, sid, eid, rs);
 				    }
 				}
 				else if (rs == 4) {
-				    if (now[sid] != eid) {
+				    if ((!sid_req && (now[sid] != eid)) || (sid_req == sid)) {
 					now[sid] = eid;
 					report(buf, sid, eid, rs);
 				    }
