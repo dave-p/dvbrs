@@ -19,7 +19,7 @@
 
 size_t freesat_huffman_decode
   (char *dst, size_t* dstlen, const uint8_t *src, size_t srclen);
-void report(char *buf, int sid, int eid, int rs);
+void report(char *buf, int seclen, int sid, int eid, int rs);
 
 char *ProgName;
 int timeout = 25;
@@ -108,13 +108,13 @@ int main(int argc, char **argv)
 				if (rs == 1) {
 				    if ((!sid_req && (next[sid] != eid)) || (sid_req == sid)) {
 					next[sid] = eid;
-					report(buf, sid, eid, rs);
+					report(buf, seclen, sid, eid, rs);
 				    }
 				}
 				else if (rs == 4) {
 				    if ((!sid_req && (now[sid] != eid)) || (sid_req == sid)) {
 					now[sid] = eid;
-					report(buf, sid, eid, rs);
+					report(buf, seclen, sid, eid, rs);
 				    }
 				}
 			    }
@@ -139,7 +139,7 @@ void finish(int sig) {
     return;
 }
 
-void report(char *buf, int sid, int eid, int rs) {
+void report(char *buf, int seclen, int sid, int eid, int rs) {
 
     struct timespec ts;
     struct tm *tm;
@@ -149,16 +149,18 @@ void report(char *buf, int sid, int eid, int rs) {
     char title[255];
     size_t dstlen = 255;
 
-    while (buf[p] != 0x4d) {
+    while (p < seclen && buf[p] != 0x4d) {
         p += buf[p+1] + 2;
     }
-    if (buf[p+6] == 0x1f) {
-        freesat_huffman_decode(title, &dstlen, &buf[p+6], buf[p+5]);
-    }
-    else {
-        strncpy(title, &buf[p+6], buf[p+5]);
-        title[buf[p+5]] = 0;
-    } 
+    if (p < seclen) {
+        if (buf[p+6] == 0x1f) {
+            freesat_huffman_decode(title, &dstlen, &buf[p+6], buf[p+5]);
+        }
+        else {
+            strncpy(title, &buf[p+6], buf[p+5]);
+            title[buf[p+5]] = 0;
+        }
+    else strcpy(title, "<Missing event descriptor>");
     clock_gettime(CLOCK_REALTIME, &ts);
     tm = localtime(&ts.tv_sec);
     ms = ts.tv_nsec / 1000000;
